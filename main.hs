@@ -1,41 +1,75 @@
-import System.IO  
-import System.Directory  
-import Data.List  
+-- Cardapio
+-- opcao, qtdPessoas, desconto
 
--- Definições para os atributos do grafo
-type Vertice = Int
-type Aresta = (Vertice, Vertice)
-type Grafo = [Aresta]
+import Control.Monad
+import System.IO
 
--- Função grafo retorna uma array de aresta
-grafo :: [Aresta]
-grafo = [
-    (1,2), (2,3), (1,4), (1,5) -- Definindo ligações dos nós do grafo
-    ]
-
--- Função adjacentes recebe o grafo e um vértive e retorna a lista de ligações
-adjacentes :: Grafo -> Vertice -> [Vertice]
-adjacentes [] _ = [] -- se entrada vier vazia, printa nada
-adjacentes ((a,b):c) v
-    | (a == v) = b:(adjacentes c v)
-    | (b == v) = a:(adjacentes c v)
-    | otherwise = adjacentes c v
-  
-main = do  
-    handle <- openFile "cidades.txt" ReadMode  
-    tempdir <- getTemporaryDirectory  
-    (tempName, tempHandle) <- openTempFile tempdir "temp"  
-    conteudo <- hGetContents handle  
-    let qtdCidades = lines conteudo  
-        cidadesNumeradas = zipWith (\n line -> show n ++ " - " ++ line) [1..] qtdCidades  
-    putStrLn "Essas são as cidades:"  
-    putStr $ unlines cidadesNumeradas  
-    putStrLn "Qual você deseja olhar as ligações?"  
-    escolhaCidade <- getLine
-    let escolha = read escolhaCidade  
-        ligacoes  = adjacentes grafo escolha
-        --z = zipWith (\n line -> show n ++ " - " ++ line) [1..] ligacoes
-    --putStrLn "Essas são as cidades:"  
-    --putStr $ unlines z  
+mostraConteudoArq :: String -> String -> IO()
+mostraConteudoArq stringMensagem stringArq = do
+    handle <- openFile stringArq ReadMode
+    conteudoOpcoes <- hGetContents handle
+    let qtdOpcoes = lines conteudoOpcoes
+        opcoesEnum = zipWith (\n line -> show n ++ " - " ++ line) [1..] qtdOpcoes
+    putStrLn stringMensagem
+    putStr $ unlines opcoesEnum
     hClose handle
-    hClose tempHandle
+
+pedidos :: Int -> String -> IO ()
+pedidos qtdPessoas fileName = do
+    putStrLn "Escolha a opcao do pedido:"
+    opcaoCardJant <- getLine
+    let optionToInt = read opcaoCardJant :: Int
+    handle <- openFile fileName ReadMode
+    conteudoOpcoes <- hGetContents handle
+    let arrayOfContents = lines conteudoOpcoes
+        lineContent = arrayOfContents !! (optionToInt - 1)
+    appendFile "pedidos.txt" (lineContent ++ "\n")
+    putStrLn "Mais um pedido (s - sim/ n -nao)?"
+    resposta <- getChar
+    if (resposta /= 'n') then pedidos qtdPessoas fileName
+    else print "Pedido encerrado."
+
+showDefaultMenu :: Int -> IO()
+showDefaultMenu numOfPeople = do
+    mostraConteudoArq "Aqui estao as opcoes:" "opcoes.txt"
+
+    putStrLn "Escolha a opcao de lanche:"
+    escolhaOpcao <- getLine
+    let escolhaOpcaoInt = read escolhaOpcao
+    if (escolhaOpcaoInt == 1) then do
+        mostraConteudoArq "Opcoes de cafe:" "cafe.txt"
+        pedidos numOfPeople "cafe.txt"
+        showDefaultMenu numOfPeople
+    else if (escolhaOpcaoInt == 2) then do
+        mostraConteudoArq "Opcoes de almoco:" "almoco.txt"
+        pedidos numOfPeople "almoco.txt"
+        showDefaultMenu numOfPeople
+    else if (escolhaOpcaoInt == 3) then do
+        mostraConteudoArq "Opcoes de cafe da manha:" "jantar.txt"
+        pedidos numOfPeople "jantar.txt"
+        showDefaultMenu numOfPeople
+    else do
+        print "Pedido encerrado"
+
+mostraPedidos :: IO()
+mostraPedidos = do
+    handle<- openFile "pedidos.txt" ReadMode
+    contents <- hGetContents handle
+    putStrLn contents
+--    let thisWords = words contents
+  --  let b = length thisWords
+   -- let a = [x*2 | x <- [1..b]]
+
+    hClose handle
+--    thisWords !! a
+
+main = do
+    putStrLn "Bem Vindo ao Restaurante do Haskell!!!"
+    putStrLn "Digite a quantidade de pessoas na mesa:"
+    qtdPessoasMesa <- getLine
+    let qtdPessoasMesaInt = read qtdPessoasMesa
+    if (qtdPessoasMesaInt > 8) then print "Ultrapassou o limite da mesa!"
+    else do
+        print "Sinta-se em casa"
+        showDefaultMenu qtdPessoasMesaInt
+        mostraPedidos

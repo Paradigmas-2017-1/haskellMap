@@ -1,0 +1,5 @@
+Ovos_Mexidos 5
+Waffle 5
+Cereais 5
+Salada_de_Fruta 3
+Misto_quente 8
